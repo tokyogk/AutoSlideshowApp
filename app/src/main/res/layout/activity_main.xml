@@ -9,7 +9,7 @@
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="288dp"
-        android:id="@+id/imageView" />
+        android:id="@+id/gSlideImage" />
 
     <TextView
         android:layout_width="match_parent"

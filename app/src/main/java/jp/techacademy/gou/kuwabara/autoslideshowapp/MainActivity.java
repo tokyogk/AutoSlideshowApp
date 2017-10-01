@@ -34,7 +34,11 @@ public class MainActivity extends AppCompatActivity {
     Button PlayStoptButton;
     Button GoButton;
     Button BackButton;
-    Image GSlideImage;
+    ImageView GSlideImage;
+
+    private Cursor GCursor;
+
+
 
     private static final int PERMISSIONS_REQUEST_CODE = 100;
 
@@ -43,12 +47,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-
         GTimerText = (TextView) findViewById(R.id.TextView);
         PlayStoptButton = (Button) findViewById(R.id.play_stop_button);
         GoButton = (Button) findViewById(R.id.go_button);
         BackButton = (Button) findViewById(R.id.back_button);
+        GSlideImage = (ImageView)findViewById(R.id.gSlideImage);
+
 
         PlayStoptButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,38 +67,14 @@ public class MainActivity extends AppCompatActivity {
                     restartTimer();
                 }
             }
-
-            public  void restartTimer()
-            {
-                if (GTimer == null) {
-                    GTimer = new Timer();
-                    GTimer.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            GTimerSec += 0.1;
-
-                            GHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    GTimerText.setText(String.format("%.1f", GTimerSec));
-                                }
-                            });
-                        }
-                    }, 100, 100);
-                }
-            }
-
-            public  void stopTimer()
-            {
-                GTimer.cancel();
-                GTimer = null;
-            }
-
         });
 
         GoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                GTimerSec  += 0.1;
+                GTimerText.setText(String.format("%.1f", GTimerSec));
+
                 if (GTimer != null) {
                     GTimer.cancel();
                     GTimer = null;
@@ -129,9 +109,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             getContentsInfo();
         }
-
-
-
     }
 
     @Override
@@ -147,8 +124,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void getContentsInfo() {
+    private  void restartTimer()
+    {
+        if (GTimer == null) {
+            GTimer = new Timer();
+            GTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    GTimerSec += 0.1;
 
+                    GHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            GTimerText.setText(String.format("%.1f", GTimerSec));
+                        }
+                    });
+                }
+            }, 100, 100);
+        }
+    }
+
+    private  void stopTimer()
+    {
+        GTimer.cancel();
+        GTimer = null;
+    }
+
+
+    private Cursor getContentsInfo() {
         // 画像の情報を取得する
         ContentResolver resolver = getContentResolver();
         Cursor cursor = resolver.query(
@@ -158,7 +161,16 @@ public class MainActivity extends AppCompatActivity {
                 null, // フィルタ用パラメータ
                 null // ソート (null ソートなし)
         );
+        if (cursor.moveToFirst()) {
+            return cursor;
+        } else {
+            cursor.close();
+            return null;
+        }
+    }
 
+
+        /*
         if (cursor.moveToPosition()) {
             // indexからIDを取得し、そのIDから画像のURIを取得する
             int fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID);
@@ -168,8 +180,7 @@ public class MainActivity extends AppCompatActivity {
             ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
             imageVIew.setImageURI(imageUri);
         }
+        */
 
 
-        cursor.close();
     }
-}
