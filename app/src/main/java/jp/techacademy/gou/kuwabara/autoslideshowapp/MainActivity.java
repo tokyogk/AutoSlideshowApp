@@ -72,12 +72,11 @@ public class MainActivity extends AppCompatActivity {
         GoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                GTimerSec  += 0.1;
-                GTimerText.setText(String.format("%.1f", GTimerSec));
+                if(GCursor != null){
+                    // 最後まで来たらあたまから
+                    if(!GCursor.moveToNext()) GCursor.moveToFirst();
+                    // 画像を表示させる関数を呼ぶ
 
-                if (GTimer != null) {
-                    GTimer.cancel();
-                    GTimer = null;
                 }
             }
         });
@@ -85,12 +84,11 @@ public class MainActivity extends AppCompatActivity {
         BackButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                GTimerSec  -= 0.1;
-                GTimerText.setText(String.format("%.1f", GTimerSec));
-
-                if (GTimer != null) {
-                    GTimer.cancel();
-                    GTimer = null;
+                if(GCursor != null){
+                    // 最後まで来たらあたまから
+                    if(!GCursor.moveToPrevious()) GCursor.moveToLast();
+                    // 画像を表示させる関数を呼ぶ
+                    setImage();
                 }
             }
         });
@@ -100,14 +98,14 @@ public class MainActivity extends AppCompatActivity {
             // パーミッションの許可状態を確認する
             if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 // 許可されている
-                getContentsInfo();
+                GCursor = getContentsInfo();
             } else {
                 // 許可されていないので許可ダイアログを表示する
                 requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_CODE);
             }
             // Android 5系以下の場合
         } else {
-            getContentsInfo();
+            GCursor = getContentsInfo();
         }
     }
 
@@ -116,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case PERMISSIONS_REQUEST_CODE:
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    getContentsInfo();
+                    GCursor = getContentsInfo();
                 }
                 break;
             default:
