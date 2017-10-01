@@ -23,15 +23,18 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
-    Timer mTimer;
-    TextView mTimerText;
-    double mTimerSec = 0.0;
+    Timer GTimer;
+    private TimerTask timerTask;
+    private boolean runflg = false;
+    TextView GTimerText;
+    double GTimerSec = 0.0;
 
-    Handler mHandler = new Handler();
+    Handler GHandler = new Handler();
 
     Button PlayStoptButton;
     Button GoButton;
     Button BackButton;
+    Image GSlideImage;
 
     private static final int PERMISSIONS_REQUEST_CODE = 100;
 
@@ -40,7 +43,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mTimerText = (TextView) findViewById(R.id.TextView);
+
+
+        GTimerText = (TextView) findViewById(R.id.TextView);
         PlayStoptButton = (Button) findViewById(R.id.play_stop_button);
         GoButton = (Button) findViewById(R.id.go_button);
         BackButton = (Button) findViewById(R.id.back_button);
@@ -48,25 +53,69 @@ public class MainActivity extends AppCompatActivity {
         PlayStoptButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mTimer == null) {
-                    mTimer = new Timer();
-                    mTimer.schedule(new TimerTask() {
+                if (runflg) {
+                    // 再生中->停止の処理
+                    runflg = false;
+                    stopTimer();
+                } else {
+                    // 停止中->再生の処理
+                    runflg = true;
+                    restartTimer();
+                }
+            }
+
+            public  void restartTimer()
+            {
+                if (GTimer == null) {
+                    GTimer = new Timer();
+                    GTimer.schedule(new TimerTask() {
                         @Override
                         public void run() {
-                            mTimerSec += 0.1;
+                            GTimerSec += 0.1;
 
-                            mHandler.post(new Runnable() {
+                            GHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    mTimerText.setText(String.format("%.1f", mTimerSec));
+                                    GTimerText.setText(String.format("%.1f", GTimerSec));
                                 }
                             });
                         }
-                    }, 2000, 2000);
+                    }, 100, 100);
                 }
+            }
 
+            public  void stopTimer()
+            {
+                GTimer.cancel();
+                GTimer = null;
+            }
 
-                // Android 6.0以降の場合
+        });
+
+        GoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (GTimer != null) {
+                    GTimer.cancel();
+                    GTimer = null;
+                }
+            }
+        });
+
+        BackButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                GTimerSec  -= 0.1;
+                GTimerText.setText(String.format("%.1f", GTimerSec));
+
+                if (GTimer != null) {
+                    GTimer.cancel();
+                    GTimer = null;
+                }
+            }
+        });
+
+        // Android 6.0以降の場合
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // パーミッションの許可状態を確認する
             if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
@@ -110,7 +159,8 @@ public class MainActivity extends AppCompatActivity {
                 null // ソート (null ソートなし)
         );
 
-        if (cursor.moveToFirst()) {
+        if (cursor.moveToPosition()) {
+            // indexからIDを取得し、そのIDから画像のURIを取得する
             int fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID);
             Long id = cursor.getLong(fieldIndex);
             Uri imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
@@ -118,6 +168,8 @@ public class MainActivity extends AppCompatActivity {
             ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
             imageVIew.setImageURI(imageUri);
         }
+
+
         cursor.close();
     }
 }
