@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -47,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        GTimerText = (TextView) findViewById(R.id.TextView);
+
         PlayStoptButton = (Button) findViewById(R.id.play_stop_button);
         GoButton = (Button) findViewById(R.id.go_button);
         BackButton = (Button) findViewById(R.id.back_button);
@@ -58,13 +59,25 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (runflg) {
-                    // 再生中->停止の処理
+                    // 停止中->再生の処理
                     runflg = false;
                     stopTimer();
+                    stopButton();
+                    canPushButton();
+                    return ;
+
                 } else {
-                    // 停止中->再生の処理
+                    // 再生中->停止の処理
                     runflg = true;
-                    restartTimer();
+                    photoTimer();
+                    startButton();
+                    cantPushButton();
+                }
+                if(GCursor != null){
+                    // 最初で戻るボタンを押したら最後に戻る
+                    if(!GCursor.moveToNext()) GCursor.moveToFirst();
+                    // 画像を表示させる関数を呼ぶ
+
                 }
             }
         });
@@ -73,10 +86,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if(GCursor != null){
-                    // 最後まで来たらあたまから
+                    // 最初で戻るボタンを押したら最後に戻る
                     if(!GCursor.moveToNext()) GCursor.moveToFirst();
                     // 画像を表示させる関数を呼ぶ
-
+                    setImage();
                 }
             }
         });
@@ -101,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
                 GCursor = getContentsInfo();
             } else {
                 // 許可されていないので許可ダイアログを表示する
+                Toast.makeText(this,"許可しないと見れません。許可してください！",Toast.LENGTH_SHORT).show();
                 requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_CODE);
             }
             // Android 5系以下の場合
@@ -122,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private  void restartTimer()
+    private  void photoTimer()
     {
         if (GTimer == null) {
             GTimer = new Timer();
@@ -134,13 +148,19 @@ public class MainActivity extends AppCompatActivity {
                     GHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            GTimerText.setText(String.format("%.1f", GTimerSec));
+                            if(GCursor != null){
+                                // 最後に行ったら最初に戻る
+                                if(!GCursor.moveToNext()) GCursor.moveToFirst();
+                                // 画像を表示させる関数を呼ぶ
+                                setImage();
+                            }
                         }
                     });
                 }
-            }, 100, 100);
+            }, 2000, 2000);
         }
     }
+
 
     private  void stopTimer()
     {
@@ -148,9 +168,46 @@ public class MainActivity extends AppCompatActivity {
         GTimer = null;
     }
 
+    private  void stopButton() // ボタン再生時のボタン表示
+    {
+        Button play_stop_button = (Button) findViewById(R.id.play_stop_button);
+        play_stop_button.setText("再生");
+    }
+
+    private  void startButton() // ボタン停止時のボタン表示
+    {
+        Button play_stop_button = (Button) findViewById(R.id.play_stop_button);
+        play_stop_button.setText("停止");
+    }
+
+    private  void cantPushButton() // スライドショー中の他ボタンの操作禁止
+    {
+        Button go_button = (Button) findViewById(R.id.go_button);
+        Button back_button = (Button) findViewById(R.id.back_button);
+        go_button.setEnabled(false);
+        back_button.setEnabled(false);
+    }
+
+    private  void canPushButton() // スライドショー中の他ボタンの操作禁止
+    {
+        Button go_button = (Button) findViewById(R.id.go_button);
+        Button back_button = (Button) findViewById(R.id.back_button);
+        go_button.setEnabled(true);
+        back_button.setEnabled(true);
+    }
+    /* 先生に教えてもらった一つにする場合
+    private void setPushButton(boolean flag) // スライドショー中の他ボタンの操作禁止
+{
+  Button go_button = (Button) findViewById(R.id.go_button);
+  Button back_button = (Button) findViewById(R.id.back_button);
+  go_button.setEnabled(flag);
+  back_button.setEnabled(flag);
+}
+     */
 
     private Cursor getContentsInfo() {
         // 画像の情報を取得する
+
         ContentResolver resolver = getContentResolver();
         Cursor cursor = resolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI, // データの種類
@@ -167,18 +224,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-        /*
-        if (cursor.moveToPosition()) {
-            // indexからIDを取得し、そのIDから画像のURIを取得する
-            int fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID);
-            Long id = cursor.getLong(fieldIndex);
-            Uri imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
-
-            ImageView imageVIew = (ImageView) findViewById(R.id.imageView);
-            imageVIew.setImageURI(imageUri);
-        }
-        */
-
-
+    private void setImage(){
+        int fieldIndex =
+                GCursor.getColumnIndex(MediaStore.Images.Media._ID);
+        Long id = GCursor.getLong(fieldIndex);
+        Uri imageUri =ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+        GSlideImage.setImageURI(imageUri);
+         }
     }
